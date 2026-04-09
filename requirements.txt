@@ -1,0 +1,11 @@
+fastapi>=0.115.0
+uvicorn>=0.30.0
+python-multipart
+python-docx
+lxml
+pillow
+numpy<2.3.0
+opencv-python
+latex2mathml
+mathml2omml
+pytesseract
