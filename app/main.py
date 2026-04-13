@@ -341,6 +341,36 @@ def index() -> str:
         .status.error { color: var(--error); }
         .status.info { color: var(--body); }
 
+        .status-box {
+            margin-top: 12px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            line-height: 1.5;
+            display: none;
+        }
+
+        .status-box.success {
+            display: block;
+            color: #1f6b14;
+            background: #f6ffed;
+            border: 1px solid #b7eb8f;
+        }
+
+        .status-box.error {
+            display: block;
+            color: #a8071a;
+            background: #fff1f0;
+            border: 1px solid #ffa39e;
+        }
+
+        .status-box.info {
+            display: block;
+            color: #1d4f64;
+            background: #f0fbff;
+            border: 1px solid #bae7ff;
+        }
+
         @media (max-width: 860px) {
             .wrap { margin: 18px auto; padding: 18px; border-radius: 10px; }
             h1 { font-size: 24px; }
@@ -352,6 +382,12 @@ def index() -> str:
             const status = document.getElementById('convertStatus');
             status.className = 'status ' + type;
             status.textContent = message;
+        }
+
+        function setUploadStatus(message, type) {
+            const box = document.getElementById('uploadStatus');
+            box.className = 'status-box ' + type;
+            box.textContent = message;
         }
 
         function toggleExample() {
@@ -376,6 +412,78 @@ def index() -> str:
             button.dataset.originalText = button.textContent;
             button.textContent = '⏳ 处理中';
             return true;
+        }
+
+        function resetUploadLoading(button) {
+            if (!button) {
+                return;
+            }
+            button.disabled = false;
+            button.textContent = button.dataset.originalText || '上传并转换';
+        }
+
+        async function handleUpload(event) {
+            event.preventDefault();
+            const form = document.getElementById('uploadForm');
+            const fileInput = document.getElementById('docFile');
+            const button = document.getElementById('uploadButton');
+
+            if (!fileInput.files || fileInput.files.length === 0) {
+                setUploadStatus('❌ 请先选择 .docx 文件。', 'error');
+                return false;
+            }
+
+            const file = fileInput.files[0];
+            if (!file.name.toLowerCase().endsWith('.docx')) {
+                setUploadStatus('❌ 文件格式不正确，请选择 .docx 文档。', 'error');
+                return false;
+            }
+
+            setUploadLoading(button);
+            setUploadStatus('正在上传并转换，请稍候...', 'info');
+
+            try {
+                const formData = new FormData(form);
+                const response = await fetch('/convert', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    let detail = '服务器处理失败，请稍后重试。';
+                    try {
+                        const errData = await response.json();
+                        if (errData && errData.detail) {
+                            detail = errData.detail;
+                        }
+                    } catch (_) {
+                        // keep default detail
+                    }
+                    throw new Error(detail);
+                }
+
+                const blob = await response.blob();
+                const disposition = response.headers.get('Content-Disposition') || '';
+                const match = disposition.match(/filename\\*=UTF-8''([^;]+)|filename="?([^";]+)"?/i);
+                const filename = decodeURIComponent((match && (match[1] || match[2])) || ('converted_' + file.name));
+
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+
+                setUploadStatus('✅ 转换成功，文件已开始下载。', 'success');
+            } catch (error) {
+                setUploadStatus('❌ 转换失败：' + (error.message || '未知错误'), 'error');
+            } finally {
+                resetUploadLoading(button);
+            }
+
+            return false;
         }
 
         async function convertLatexPreview() {
@@ -428,7 +536,7 @@ def index() -> str:
         <section class="panel">
             <h2>上传区</h2>
             <p class="small">选择 .docx 文档，一键转换公式，完整保留原文排版</p>
-            <form action="/convert" method="post" enctype="multipart/form-data" onsubmit="return setUploadLoading(document.getElementById('uploadButton'))">
+            <form id="uploadForm" action="/convert" method="post" enctype="multipart/form-data" onsubmit="return handleUpload(event)">
                 <div class="upload-row">
                     <input id="docFile" type="file" name="file" accept=".docx" required onchange="updateFileName(this)" />
                     <label class="file-btn" for="docFile">选择 .docx 文件</label>
@@ -437,6 +545,7 @@ def index() -> str:
                 <div class="upload-row" style="margin-top: 16px;">
                     <button id="uploadButton" class="btn btn-primary" type="submit">上传并转换</button>
                 </div>
+                <div id="uploadStatus" class="status-box"></div>
             </form>
         </section>
 
