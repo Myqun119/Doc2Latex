@@ -1,0 +1,9 @@
+//排除不需要打包的文件
+.venv/
+__pycache__/
+*.pyc
+storage/in/*
+storage/out/*
+.git/
+.gitignore
+README.md
