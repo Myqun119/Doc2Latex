@@ -1,5 +1,7 @@
 # Doc2LaTeX
 
+🔗 **在线体验**：https://junhemu-doc2latex-demo.hf.space
+
 一个可部署的自动化工具原型，实现以下流程：
 
 1. 用户上传 Word 文档（`.docx`）。
@@ -8,6 +10,15 @@
 3. 将识别结果转换为 LaTeX。
 4. 将 LaTeX 重新写回为 Word 可编辑公式对象（优先 OMML，失败时回退文本）。
 5. 输出新的 Word 文档并下载。
+
+## 页面截图
+
+### 首页上传界面
+<img width="1910" height="915" alt="image" src="https://github.com/user-attachments/assets/e2d034cb-8f11-4123-b3e1-f49d08620292" />
+
+### 预览与检验
+<img width="1002" height="630" alt="image" src="https://github.com/user-attachments/assets/fae51290-ee3a-4a2e-a447-d3b69132dafd" />
+
 
 ## 技术栈
 
